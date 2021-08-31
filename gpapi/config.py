@@ -26,6 +26,7 @@ if VERSION == 2:
     config = ConfigParser.ConfigParser()
 else:
     config = configparser.ConfigParser()
+config.optionxform = str
 config.read(filepath)
 
 
@@ -52,15 +53,18 @@ class DeviceBuilder(object):
 
     def __init__(self, device, isCustomDevice=False):
         self.device = {}
+        self.unformatted_device = {} # Only raw format is accepted by clients
         if isCustomDevice:
             for (key, value) in device.items():
+                self.unformatted_device[key] = value
                 self.device[key.lower()] = value
         else:
             for (key, value) in config.items(device):
+                self.unformatted_device[key] = value
                 self.device[key.lower()] = value
 
     def getDeviceInfo(self):
-        return self.device
+        return self.unformatted_device
 
     def setLocale(self, locale):
         # test if provided locale is valid
