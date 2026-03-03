@@ -213,10 +213,10 @@ class GooglePlayAPI(object):
 
         headers = self.deviceBuilder.getAuthHeaders(self.gsfId)
         headers["app"] = "com.google.android.gms"
+        self.session.headers = headers
         response = self.session.post(AUTH_URL,
                                  data=requestParams,
                                  verify=ssl_verify,
-                                 headers=headers,
                                  proxies=self.proxies_config)
         data = response.text.split()
         params = {}
