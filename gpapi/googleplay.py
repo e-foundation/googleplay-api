@@ -25,10 +25,9 @@ class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
         ssl.OP_NO_TICKET which causes Google to return 403 Bad
         Authentication.
         """
-        context = SSLContext()
-        context.set_ciphers(ssl_.DEFAULT_CIPHERS)
+        context = ssl.create_default_context()
         context.verify_mode = ssl.CERT_REQUIRED
-        context.options &= ~0x4000
+        context.options &= ~ssl.OP_NO_TICKET
         self.poolmanager = PoolManager(*args, ssl_context=context, **kwargs)
 
 
@@ -231,4 +230,3 @@ class GooglePlayAPI(object):
             raise TokenExpiredError("server says: " + params["error"])
         else:
             raise LoginError("Auth token not found.")
-
