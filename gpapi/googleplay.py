@@ -4,8 +4,32 @@ from datetime import datetime
 import random
 
 import requests
+import ssl
+
+from urllib3.poolmanager import PoolManager
+from urllib3.util import ssl_
 
 from . import googleplay_pb2, config
+
+class SSLContext(ssl.SSLContext):
+    def set_alpn_protocols(self, protocols):
+        """
+        ALPN headers cause Google to return 403 Bad Authentication.
+        """
+        pass
+
+class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        """
+        Secure settings from ssl.create_default_context(), but without
+        ssl.OP_NO_TICKET which causes Google to return 403 Bad
+        Authentication.
+        """
+        context = ssl.create_default_context()
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.options &= ~ssl.OP_NO_TICKET
+        self.poolmanager = PoolManager(*args, ssl_context=context, **kwargs)
+
 
 ssl_verify = True
 
@@ -73,6 +97,8 @@ class GooglePlayAPI(object):
         self.device_name = device_codename
         self.setLocale(locale)
         self.setTimezone(timezone)
+        self.session = requests.session()
+        self.session.mount('https://', AuthHTTPAdapter())
 
     def setLocale(self, locale):
         self.deviceBuilder.setLocale(locale)
@@ -113,7 +139,7 @@ class GooglePlayAPI(object):
         request = self.deviceBuilder.getAndroidCheckinRequest()
 
         stringRequest = request.SerializeToString()
-        res = requests.post(CHECKIN_URL, data=stringRequest,
+        res = self.session.post(CHECKIN_URL, data=stringRequest,
                             headers=headers, verify=ssl_verify,
                             proxies=self.proxies_config)
         response = googleplay_pb2.AndroidCheckinResponse()
@@ -126,7 +152,7 @@ class GooglePlayAPI(object):
         request.accountCookie.append("[" + email + "]")
         request.accountCookie.append(ac2dmToken)
         stringRequest = request.SerializeToString()
-        requests.post(CHECKIN_URL,
+        self.session.post(CHECKIN_URL,
                       data=stringRequest,
                       headers=headers,
                       verify=ssl_verify,
@@ -142,7 +168,7 @@ class GooglePlayAPI(object):
         upload.deviceConfiguration.CopyFrom(self.deviceBuilder.getDeviceConfig())
         headers = self.getHeaders(upload_fields=True)
         stringRequest = upload.SerializeToString()
-        response = requests.post(UPLOAD_URL, data=stringRequest,
+        response = self.session.post(UPLOAD_URL, data=stringRequest,
                                  headers=headers,
                                  verify=ssl_verify,
                                  timeout=60,
@@ -186,10 +212,10 @@ class GooglePlayAPI(object):
 
         headers = self.deviceBuilder.getAuthHeaders(self.gsfId)
         headers["app"] = "com.google.android.gms"
-        response = requests.post(AUTH_URL,
+        self.session.headers = headers
+        response = self.session.post(AUTH_URL,
                                  data=requestParams,
                                  verify=ssl_verify,
-                                 headers=headers,
                                  proxies=self.proxies_config)
         data = response.text.split()
         params = {}
@@ -204,4 +230,3 @@ class GooglePlayAPI(object):
             raise TokenExpiredError("server says: " + params["error"])
         else:
             raise LoginError("Auth token not found.")
-

@@ -150,7 +150,8 @@ class DeviceBuilder(object):
                 "lang": self.locale,
                 "client_sig": "38918a453d07199354f8b19af05ec6562ced5788",
                 "callerSig": "38918a453d07199354f8b19af05ec6562ced5788",
-                "sdk_version": self.device.get('build.version.sdk_int')}
+                "sdk_version": self.device.get('build.version.sdk_int'),
+                "droidguard_results": "dummy123"}
 
     def getAndroidCheckinRequest(self):
         request = googleplay_pb2.AndroidCheckinRequest()
