@@ -58,6 +58,12 @@ class TokenExpiredError(Exception):
     def __str__(self):
         return repr(self.value)
 
+class TokenNotFoundError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 class RequestError(Exception):
     def __init__(self, value):
@@ -229,4 +235,4 @@ class GooglePlayAPI(object):
         elif "error" in params:
             raise TokenExpiredError("server says: " + params["error"])
         else:
-            raise LoginError("Auth token not found. Params: %r" % params)
+            raise TokenNotFoundError("Auth token not found. Params: %r" % params)
