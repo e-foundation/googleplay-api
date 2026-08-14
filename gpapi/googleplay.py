@@ -235,4 +235,4 @@ class GooglePlayAPI(object):
         elif "error" in params:
             raise TokenExpiredError("server says: " + params["error"])
         else:
-            raise TokenNotFoundError("Auth token not found. Params: %r" % params)
+            raise TokenNotFoundError("Auth token not found. Response: %s" % response.text)
