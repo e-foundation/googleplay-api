@@ -58,7 +58,7 @@ class TokenExpiredError(Exception):
     def __str__(self):
         return repr(self.value)
 
-class TokenNotFoundError(Exception):
+class ServerSideError(Exception):
     def __init__(self, value):
         self.value = value
 
@@ -234,5 +234,8 @@ class GooglePlayAPI(object):
             self.setAuthSubToken(params["auth"])
         elif "error" in params:
             raise TokenExpiredError("server says: " + params["error"])
+        elif response.status_code // 100 == 5:
+            raise ServerSideError("Google server returned %d: %s" % (response.status_code,
+                                                              response.text))
         else:
-            raise TokenNotFoundError("Auth token not found. Response: %s" % response.text)
+            raise LoginError("Auth token not found. Response: %s" % response.text)
